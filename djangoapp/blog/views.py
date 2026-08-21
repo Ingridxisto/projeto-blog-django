@@ -16,7 +16,7 @@ class PostListView(ListView):
     template_name = 'blog/pages/index.html'
     context_object_name = 'posts'
     paginate_by = PER_PAGE
-    queryset = Post.objects.get_published()
+    queryset = Post.objects.get_published()  # type: ignore
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
@@ -34,8 +34,7 @@ def created_by(request, author_pk):
     if user is None:
         raise Http404()
 
-    posts = Post.objects.get_published()\
-        .filter(created_by__pk=author_pk)
+    posts = Post.objects.get_published().filter(created_by__pk=author_pk)  # type: ignore
     user_full_name = user.username
 
     if user.first_name:
@@ -189,23 +188,21 @@ class PageDetailView(DetailView):
         return super().get_queryset().filter(is_published=True)
 
 
-def post(request, slug):
-    post_obj = (
-        Post.objects.get_published()
-        .filter(slug=slug)
-        .first()
-    )
+class PostDetailView(DetailView):
+    model = Post
+    template_name = 'blog/pages/post.html'
+    context_object_name = 'post'
 
-    if post_obj is None:
-        raise Http404()
+    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
 
-    page_title = f'{post_obj.title} - Post - '
+        ctx = super().get_context_data(**kwargs)
+        post = self.get_object()
+        page_title = f'{post.title}'  # type: ignore
+        '- Post - '
+        ctx.update({
+            'page_title': page_title
+        })
+        return ctx
 
-    return render(
-        request,
-        'blog/pages/post.html',
-        {
-            'post': post_obj,
-            'page_title': page_title,
-        }
-    )
+    def get_queryset(self) -> QuerySet[Any]:
+        return super().get_queryset().filter(is_published=True)
